@@ -25,45 +25,44 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
-const weather_poll_sec int = 60
+const bus_event_channel_length int = 1000
 
-func send_sensor_value(bus *messaging.Bus, sensor_id string, sensor_value interface{}) {
-	err := bus.SendEvent(messaging.SensorInterface, messaging.ValueChangedEvent,
-		sensor_id, sensor_value)
-	if err != nil {
-		fmt.Printf("Unable to send sensor value! Sensor: %s, Error: %v\n", sensor_id, err)
+func handle_event(event *messaging.Event) {
+	fmt.Println(event)
+	if event.GetInterfaceName() == messaging.SensorInterface && event.GetEventName() == messaging.ValueChangedEvent {
+		// TODO check Body length. Can DBus enforce its format?
+		fmt.Printf("Sensor value changed: %v:%v\n", event.Body[0], event.Body[1])
 	}
 }
 
-func update_weather(bus *messaging.Bus) {
-	fmt.Println("Updating weather...")
-	send_sensor_value(bus, "web1.temp", uint32(10))
-	send_sensor_value(bus, "web1.hum", uint32(50))
-}
-
 func main() {
-	ch := make(chan os.Signal)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+	signal_ch := make(chan os.Signal)
+	signal.Notify(signal_ch, syscall.SIGINT, syscall.SIGTERM)
 
-	bus, err := messaging.RegisterApp("com.github.homecontrol.webweather")
+	bus, err := messaging.RegisterApp("com.github.homecontrol.dw")
 	if err != nil {
 		fmt.Println("Unable to create message bus! Error:", err)
 		os.Exit(1)
 	}
 
-	ticker := time.NewTicker(time.Second * time.Duration(weather_poll_sec))
+	err = bus.RegisterForEvent(messaging.SensorInterface, "")
+	if err != nil {
+		fmt.Println("Unable to register for sensor events! Error:", err)
+		os.Exit(1)
+	}
+
+	event_channel := bus.GetEventChannel(bus_event_channel_length)
+
 	go func() {
-		for {
-			update_weather(bus)
-			<-ticker.C
+		for event := range event_channel {
+			handle_event((*messaging.Event)(event))
 		}
 	}()
 
 	select {
-	case sig := <-ch:
-		fmt.Println("Received signal:", sig)
+	case os_signal := <-signal_ch:
+		fmt.Println("Received signal:", os_signal)
 	}
 }
