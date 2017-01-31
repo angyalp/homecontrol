@@ -28,8 +28,9 @@ import (
 const path_root dbus.ObjectPath = "/com/github/homecontrol"
 
 const (
-	SensorInterface   string = "com.github.homecontrol.sensor"
-	ValueChangedEvent string = "value_changed"
+	SensorInterface string = "com.github.homecontrol.sensor"
+	SensorValue     string = "value"
+	SensorEvent     string = "event"
 )
 
 type Bus struct {
@@ -72,9 +73,7 @@ func (bus *Bus) SendEvent(interface_name string, event_name string, params ...in
 }
 
 func (bus *Bus) RegisterForEvent(interface_name string, event_name string) error {
-	filter := make([]string, 2)
-	filter[0] = "type='signal'"
-	filter[1] = fmt.Sprintf("path='%s'", string(path_root))
+	filter := []string{"type='signal'", fmt.Sprintf("path='%s'", string(path_root))}
 	if interface_name != "" {
 		filter = append(filter, fmt.Sprintf("interface='%s'", interface_name))
 	}

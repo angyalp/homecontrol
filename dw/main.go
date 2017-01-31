@@ -31,9 +31,19 @@ const bus_event_channel_length int = 1000
 
 func handle_event(event *messaging.Event) {
 	fmt.Println(event)
-	if event.GetInterfaceName() == messaging.SensorInterface && event.GetEventName() == messaging.ValueChangedEvent {
-		// TODO check Body length. Can DBus enforce its format?
-		fmt.Printf("Sensor value changed: %v:%v\n", event.Body[0], event.Body[1])
+	if event.GetInterfaceName() == messaging.SensorInterface {
+		switch event.GetEventName() {
+		case messaging.SensorValue:
+			{
+				// TODO check Body length. Can DBus enforce its format?
+				fmt.Printf("Sensor value: %v:%v\n", event.Body[0], event.Body[1])
+			}
+		case messaging.SensorEvent:
+			{
+				// TODO check Body length. Can DBus enforce its format?
+				fmt.Printf("Sensor event: %v\n", event.Body[0])
+			}
+		}
 	}
 }
 

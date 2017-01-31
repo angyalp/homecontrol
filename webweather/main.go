@@ -31,10 +31,16 @@ import (
 const weather_poll_sec int = 60
 
 func send_sensor_value(bus *messaging.Bus, sensor_id string, sensor_value interface{}) {
-	err := bus.SendEvent(messaging.SensorInterface, messaging.ValueChangedEvent,
-		sensor_id, sensor_value)
+	err := bus.SendEvent(messaging.SensorInterface, messaging.SensorValue, sensor_id, sensor_value)
 	if err != nil {
-		fmt.Printf("Unable to send sensor value! Sensor: %s, Error: %v\n", sensor_id, err)
+		fmt.Printf("Unable to send sensor value! Sensor/Value: %s/%v, Error: %v\n", sensor_id, sensor_value, err)
+	}
+}
+
+func send_sensor_event(bus *messaging.Bus, sensor_id string) {
+	err := bus.SendEvent(messaging.SensorInterface, messaging.SensorEvent, sensor_id)
+	if err != nil {
+		fmt.Printf("Unable to send sensor event! Event: %s, Error: %v\n", sensor_id, err)
 	}
 }
 
@@ -42,6 +48,7 @@ func update_weather(bus *messaging.Bus) {
 	fmt.Println("Updating weather...")
 	send_sensor_value(bus, "web1.temp", uint32(10))
 	send_sensor_value(bus, "web1.hum", uint32(50))
+	send_sensor_event(bus, "web1.lightning")
 }
 
 func main() {
